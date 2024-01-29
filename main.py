@@ -1,8 +1,15 @@
 import cv2
 from fer import FER
+from playsound import playsound
+import sys
+
+src = 0
+
+if len(sys.argv) > 1:
+    src = int(sys.argv[1])
 
 
-vid = cv2.VideoCapture(0)
+vid = cv2.VideoCapture(src)
 detector = FER()
 
 recognising = False
@@ -37,15 +44,18 @@ while True:
         print('.', end='')
     elif recognising and recognition_iters == 10:
         if total_percentages:
+            total_percentages['fear'] *= .5
             top_emotion = max(total_percentages, key=lambda x: total_percentages[x])
-            print(f'\033[32m{top_emotion.upper()}\033[00m')
+            print(total_percentages)
+            playsound('audio/' + top_emotion + '.wav')
         else:
-            print('\033[31mNo face found!\033[00m')
+            playsound('audio/noface.wav')
         print()
         recognition_iters = 0
         recognising = False
         total_percentages = {}
-    elif cv2.waitKey(1) == ord("r"):
+    elif cv2.waitKey(1) == ord("2"):
+        playsound('audio/start.ogg')
         recognising = True
         print('Recognising', end='')
 
