@@ -4,8 +4,9 @@ import tensorflow as tf
 import numpy as np
 import cv2
 from playsound import playsound
+from time import time
 
-src = 0
+src = 2
 
 # if len(sys.argv) > 1:
 #     src = int(sys.argv[1])
@@ -18,24 +19,28 @@ cv2_face_detector = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
 tf_labels = ["angry", "disgust", "fear", "happy", "neutral", "sad", "surprise"]
 
 in_progress = False
-results = []
+results = ['neutral']
 current_emotion = None
 
 TIMESPAN = 20
 TOLERANCE = 0.3
 
 WEIGHTS = {
-    "angry": 1,
+    "angry": 1.2,
     "disgust": 1,
-    "fear": 1,
+    "fear": 0.5,
     "happy": 1,
     "neutral": 0.5,
     "sad": 1,
     "surprise": 1,
 }
 
+detection_time_total = 0
+detections = 0
 
 def analyze_deepface():
+    global detection_time_total, detections
+    t = time()
     try:
         result = DeepFace.analyze(frame, actions=["emotion"])[0]["emotion"]
         for emotion in WEIGHTS:
@@ -45,6 +50,9 @@ def analyze_deepface():
         return max(result, key=result.get)
     except ValueError:
         return
+    finally:
+        detection_time_total += time() - t
+        detections += 1
 
 
 def analyze_fer():
@@ -122,10 +130,10 @@ while True:
     if (
         results.count(current_emotion) <= TIMESPAN * TOLERANCE
         and most_common_emotion != current_emotion
-    ):
+    ) or cv2.waitKey(1) & 0xFF == ord('2'):
         if most_common_emotion is not None:
-            # playsound("audio/" + most_common_emotion + ".wav")
-            print("\n" + most_common_emotion)
+            playsound("audio/" + most_common_emotion + ".wav")
+            print("\n" + most_common_emotion + ' (avg. time: ' + str(detection_time_total / detections) + 's)')
         current_emotion = most_common_emotion
 
     # print(
