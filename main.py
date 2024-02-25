@@ -1,63 +1,162 @@
-import cv2
+from deepface import DeepFace
 from fer import FER
+import tensorflow as tf
+import numpy as np
+import cv2
 from playsound import playsound
-import sys
+from time import time
 
-src = 0
+src = 2
 
-if len(sys.argv) > 1:
-    src = int(sys.argv[1])
-
+# if len(sys.argv) > 1:
+#     src = int(sys.argv[1])
 
 vid = cv2.VideoCapture(src)
-detector = FER()
 
-recognising = False
-total_percentages = {}
-recognition_iters = 0
+fer_detector = FER()
+tf_model = tf.keras.models.load_model("rafdb.h5")
+cv2_face_detector = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
+tf_labels = ["angry", "disgust", "fear", "happy", "neutral", "sad", "surprise"]
+
+in_progress = False
+results = ['neutral']
+current_emotion = None
+
+TIMESPAN = 20
+TOLERANCE = 0.3
+
+WEIGHTS = {
+    "angry": 1.2,
+    "disgust": 1,
+    "fear": 0.5,
+    "happy": 1,
+    "neutral": 0.5,
+    "sad": 1,
+    "surprise": 1,
+}
+
+detection_time_total = 0
+detections = 0
+
+def analyze_deepface():
+    global detection_time_total, detections
+    t = time()
+    try:
+        result = DeepFace.analyze(frame, actions=["emotion"])[0]["emotion"]
+        for emotion in WEIGHTS:
+            if emotion not in result:
+                continue
+            result[emotion] *= WEIGHTS[emotion]
+        return max(result, key=result.get)
+    except ValueError:
+        return
+    finally:
+        detection_time_total += time() - t
+        detections += 1
+
+
+def analyze_fer():
+    return fer_detector.detect_emotions(frame)
+
+
+def analyze_tf():
+    face_cv2 = cv2_face_detector.detectMultiScale(frame, 1.3, 5)
+    if len(face_cv2) > 0:
+        x, y, w, h = face_cv2[0]
+        face = frame[y : y + h, x : x + w]
+        face = tf.image.resize(np.expand_dims(face, axis=0), (224, 224))
+        return tf_model.predict(face)
+
 
 while True:
     _, frame = vid.read()
 
-    if recognising and recognition_iters < 10:
-        result = detector.detect_emotions(frame)
-        if result:
-            largest_box = max(
-                result, key=lambda b: b["box"][2] * b["box"][3] if any(b["box"]) else 0
-            )  # This returns the box with the largest area
-            cv2.rectangle(
-                frame,
-                (largest_box["box"][0], largest_box["box"][1]),
-                (
-                    largest_box["box"][0] + largest_box["box"][2],
-                    largest_box["box"][1] + largest_box["box"][3],
-                ),
-                (0, 255, 0),
-                2,
-            )
-            total_percentages = {
-                x: (total_percentages[x] if x in total_percentages else 0) + largest_box["emotions"][x]
-                for x in largest_box["emotions"]
-            }
+    # if cv2.waitKey(1) == ord("2") and not in_progress:
+    #     playsound("audio/start.ogg")
+    #     in_progress = True
 
-        recognition_iters += 1
-        print('.', end='')
-    elif recognising and recognition_iters == 10:
-        if total_percentages:
-            total_percentages['fear'] *= .5
-            top_emotion = max(total_percentages, key=lambda x: total_percentages[x])
-            print(total_percentages)
-            playsound('audio/' + top_emotion + '.wav')
-        else:
-            playsound('audio/noface.wav')
-        print()
-        recognition_iters = 0
-        recognising = False
-        total_percentages = {}
-    elif cv2.waitKey(1) == ord("2"):
-        playsound('audio/start.ogg')
-        recognising = True
-        print('Recognising', end='')
+    # if time_deepface >= 1 and time_fer >= 1 and time_tf >= 1:
+    #     in_progress = False
+    #     time_deepface, time_fer, time_tf = 0, 0, 0
+    #     average_deepface = {
+    #         emotion: sum(
+    #             [attempt[0]["emotion"][emotion] for attempt in results_deepface]
+    #         )
+    #         for emotion in results_deepface[0][0]["emotion"]
+    #     }
+    #     average_fer = {
+    #         emotion: sum(
+    #             [attempt[0]["emotions"][emotion] for attempt in results_fer]
+    #         )
+    #         for emotion in results_fer[0][0]["emotions"]
+    #     }
+    #     average_tf = {
+    #         emotion: sum(
+    #             [list(attempt)[0][i] for attempt in results_tf]
+    #         )
+    #         for i, emotion in enumerate(tf_labels)
+    #     }
+    #
+    #     print(
+    #         sorted(average_deepface.items(), key=lambda x: x[1], reverse=True),
+    #         sorted(average_fer.items(), key=lambda x: x[1], reverse=True),
+    #         sorted(average_tf.items(), key=lambda x: x[1], reverse=True),
+    #         sep="\n",
+    #     )
+    #
+    # if in_progress:
+    #     analyze_deepface()
+    #     analyze_fer()
+    #     analyze_tf()
+
+    result_deepface = analyze_deepface()
+    result_fer = None  # analyze_fer()
+    result_tf = None  # analyze_tf()
+    if result_tf is not None:
+        result_tf = {tf_labels[i]: value for i, value in enumerate(result_tf[0])}
+
+    # print(f'\033[90m{result_deepface}\033[0m ', end='')
+
+    if result_deepface is not None:
+        results.append(result_deepface)
+
+    if len(results) > TIMESPAN:
+        del results[0]
+
+    most_common_emotion = max(results, key=results.count)
+
+    # print('\033[90m', result_deepface, '|', current_emotion, '|', *results, '\033[0m')
+
+    if (
+        results.count(current_emotion) <= TIMESPAN * TOLERANCE
+        and most_common_emotion != current_emotion
+    ) or cv2.waitKey(1) & 0xFF == ord('2'):
+        if most_common_emotion is not None:
+            playsound("audio/" + most_common_emotion + ".wav")
+            print("\n" + most_common_emotion + ' (avg. time: ' + str(detection_time_total / detections) + 's)')
+        current_emotion = most_common_emotion
+
+    # print(
+    #     "Deepface:",
+    #     (
+    #         result_deepface[0]["dominant_emotion"]
+    #         if result_deepface
+    #         else "\033[31mNo face\033[0m"
+    #     ),
+    #     end=" | ",
+    # )
+    # print(
+    #     "FER:",
+    #     (
+    #         max(result_fer[0]["emotions"], key=result_fer[0]["emotions"].get)
+    #         if result_fer
+    #         else "\033[31mNo face\033[0m"
+    #     ),
+    #     end=" | ",
+    # )
+    # print("TensorFlow:", max(result_tf, key=result_tf.get) if result_tf else "\033[31mNo face\033[0m")
+
+    # print()
 
     cv2.imshow("Camera input", frame)
 
