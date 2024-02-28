@@ -1,22 +1,14 @@
 from deepface import DeepFace
-from fer import FER
-import tensorflow as tf
-import numpy as np
 import cv2
 from playsound import playsound
 from time import time
 
-src = 2
+src = 0
 
 # if len(sys.argv) > 1:
 #     src = int(sys.argv[1])
 
 vid = cv2.VideoCapture(src)
-
-fer_detector = FER()
-tf_model = tf.keras.models.load_model("rafdb.h5")
-cv2_face_detector = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
-tf_labels = ["angry", "disgust", "fear", "happy", "neutral", "sad", "surprise"]
 
 in_progress = False
 results = ['neutral']
@@ -53,19 +45,6 @@ def analyze_deepface():
     finally:
         detection_time_total += time() - t
         detections += 1
-
-
-def analyze_fer():
-    return fer_detector.detect_emotions(frame)
-
-
-def analyze_tf():
-    face_cv2 = cv2_face_detector.detectMultiScale(frame, 1.3, 5)
-    if len(face_cv2) > 0:
-        x, y, w, h = face_cv2[0]
-        face = frame[y : y + h, x : x + w]
-        face = tf.image.resize(np.expand_dims(face, axis=0), (224, 224))
-        return tf_model.predict(face)
 
 
 while True:
@@ -110,12 +89,6 @@ while True:
     #     analyze_tf()
 
     result_deepface = analyze_deepface()
-    result_fer = None  # analyze_fer()
-    result_tf = None  # analyze_tf()
-    if result_tf is not None:
-        result_tf = {tf_labels[i]: value for i, value in enumerate(result_tf[0])}
-
-    # print(f'\033[90m{result_deepface}\033[0m ', end='')
 
     if result_deepface is not None:
         results.append(result_deepface)
