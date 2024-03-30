@@ -27,7 +27,7 @@ def analyze_deepface():
         tmp_file.seek(0)
 
         try:
-            result = requests.post('http://127.0.0.1:5000/', files={'file': tmp_file}).text
+            result = requests.post('http://192.168.0.183:5000/', files={'file': tmp_file}).text
             if result == 'Error':
                 result = None
         except requests.RequestException as e:
