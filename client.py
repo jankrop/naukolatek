@@ -4,6 +4,7 @@ from playsound import playsound
 import numpy as np
 import tempfile
 import RPi.GPIO as GPIO
+import json
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(2, GPIO.IN)
@@ -30,6 +31,8 @@ def analyze_deepface():
             result = requests.post('http://192.168.0.183:5000/', files={'file': tmp_file}).text
             if result == 'Error':
                 result = None
+            else:
+                result = json.dumps(result)
         except requests.RequestException as e:
             print("Error:", e)
 

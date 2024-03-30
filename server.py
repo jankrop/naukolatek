@@ -2,6 +2,7 @@ from deepface import DeepFace
 import flask
 import numpy as np
 import tempfile
+import json
 # import cv2
 
 app = flask.Flask(__name__)
@@ -39,7 +40,7 @@ def index():
         #cv2.imshow('Received', frame)
 
         result = analyze_deepface(frame)
-        return result
+        return json.loads(result) if result != 'Error' else result
 
 
 if __name__ == "__main__":
