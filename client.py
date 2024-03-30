@@ -3,6 +3,10 @@ import cv2
 from playsound import playsound
 import numpy as np
 import tempfile
+import RPi.GPIO as GPIO
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(2, GPIO.IN)
 
 video = cv2.VideoCapture(0)
 
@@ -13,10 +17,9 @@ current_emotion = None
 TIMESPAN = 20
 TOLERANCE = 0.3
 
-while True:
-    _, frame = video.read()
-    cv2.imshow('Video', frame)
+start = False
 
+def analyze_deepface():
     result = None
 
     with tempfile.NamedTemporaryFile() as tmp_file:
@@ -30,28 +33,38 @@ while True:
         except requests.RequestException as e:
             print("Error:", e)
 
-    print(f'\033[90m{result}\033[0m')
+    return result
 
-    if result is not None:
-        results.append(result)
+recognising = False
+total_percentages = {}
+recognition_iters = 0
 
-    if len(results) > TIMESPAN:
-        del results[0]
+while True:
+    _, frame = video.read()
 
-    most_common_emotion = max(results, key=results.count)
+    if recognising and recognition_iters < 10:
+        result = analyze_deepface()
 
-    # print('\033[90m', result_deepface, '|', current_emotion, '|', *results, '\033[0m')
+        if result:
+            total_percentages = {
+                emotion: total_percentages.get(emotion, 0) + float(result[emotion])
+                for emotion in result
+            }
+    elif recognising and recognition_iters == 10:
+        if total_percentages:
+            top_emotion = max(total_percentages, key=total_percentages.get)
+            playsound(f'audio/{top_emotion}.wav')
+        else:
+            playsound('audio/noface.wav')
+        recognition_iters = 0
+        recognising = False
+        total_percentages = {}
+    elif GPIO.input(2) == 0:  # pressed
+        playsound('audio/start.ogg')
+        recognising = True
 
-    if (
-            results.count(current_emotion) <= TIMESPAN * TOLERANCE
-            and most_common_emotion != current_emotion
-    ) or cv2.waitKey(1) & 0xFF == ord('2'):
-        if most_common_emotion is not None:
-            playsound("audio/" + most_common_emotion + ".wav")
-        current_emotion = most_common_emotion
-
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+    if not start:
+        start = True
+        playsound('audio/start.wav')
 
 video.release()
-cv2.destroyAllWindows()
