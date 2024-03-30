@@ -81,7 +81,7 @@ while True:
     #
     # cv2.imshow("Camera input", frame)
 
-    if recognising and recognition_iters < 10:
+    if recognising and recognition_iters < 5:
         try:
             result = DeepFace.analyze(frame, actions=["emotion"])
         except ValueError:
