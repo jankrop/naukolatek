@@ -32,7 +32,7 @@ def analyze_deepface():
             if result == 'Error':
                 result = None
             else:
-                result = json.dumps(result)
+                result = json.loads(result)
         except requests.RequestException as e:
             print("Error:", e)
 

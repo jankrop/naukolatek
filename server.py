@@ -40,7 +40,7 @@ def index():
         #cv2.imshow('Received', frame)
 
         result = analyze_deepface(frame)
-        return json.loads(result) if result != 'Error' else result
+        return json.dumps(result) if result != 'Error' else result
 
 
 if __name__ == "__main__":
