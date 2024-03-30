@@ -39,7 +39,6 @@ def analyze_deepface(fr):
     return result
 
 recognising = False
-frames = []
 total_percentages = {}
 recognition_iters = 0
 
@@ -47,25 +46,16 @@ while True:
     _, frame = video.read()
 
     if recognising and recognition_iters < 5:
-        # result = analyze_deepface()
-        #
-        # if result:
-        #     total_percentages = {
-        #         emotion: total_percentages.get(emotion, 0) + float(result[emotion])
-        #         for emotion in result
-        #     }
-        frames.append(frame)
+        result = analyze_deepface(frame)
+
+        if result:
+            total_percentages = {
+                emotion: total_percentages.get(emotion, 0) + float(result[emotion])
+                for emotion in result
+            }
+
         recognition_iters += 1
     elif recognising and recognition_iters == 5:
-        for captured_frame in frames:
-            result = analyze_deepface(captured_frame)
-
-            if result:
-                total_percentages = {
-                    emotion: total_percentages.get(emotion, 0) + float(result[emotion])
-                    for emotion in result
-                }
-
         if total_percentages:
             top_emotion = max(total_percentages, key=total_percentages.get)
             playsound(f'audio/{top_emotion}.wav')

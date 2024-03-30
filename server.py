@@ -37,11 +37,12 @@ def index():
         file.save(tmp_file.name)
         frame = np.load(tmp_file.name, allow_pickle=True)
 
+        result = analyze_deepface(frame)
+
         cv2.imshow('Received', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             pass
 
-        result = analyze_deepface(frame)
         return json.dumps(result) if result != 'Error' else result
 
 
