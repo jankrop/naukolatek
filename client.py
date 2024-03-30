@@ -50,7 +50,9 @@ while True:
                 emotion: total_percentages.get(emotion, 0) + float(result[emotion])
                 for emotion in result
             }
-    elif recognising and recognition_iters == 10:
+
+        recognition_iters += 1
+    elif recognising and recognition_iters == 5:
         if total_percentages:
             top_emotion = max(total_percentages, key=total_percentages.get)
             playsound(f'audio/{top_emotion}.wav')
