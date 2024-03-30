@@ -24,9 +24,8 @@ def analyze_deepface(frame):
                 continue
             result[emotion] *= WEIGHTS[emotion]
         print('\033[32m' + max(result, key=result.get) + '\033[0m')
-        return max(result, key=result.get)
-    except ValueError as e:
-        print('Error:', e)
+        return result
+    except ValueError:
         return 'Error'
 
 @app.route('/', methods=['POST'])
