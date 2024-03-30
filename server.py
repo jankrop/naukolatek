@@ -2,6 +2,7 @@ from deepface import DeepFace
 import flask
 import numpy as np
 import tempfile
+# import cv2
 
 app = flask.Flask(__name__)
 
@@ -22,6 +23,7 @@ def analyze_deepface(frame):
             if emotion not in result:
                 continue
             result[emotion] *= WEIGHTS[emotion]
+        print('\033[32m' + max(result, key=result.get) + '\033[0m')
         return max(result, key=result.get)
     except ValueError as e:
         print('Error:', e)
@@ -35,9 +37,11 @@ def index():
         file.save(tmp_file.name)
         frame = np.load(tmp_file.name, allow_pickle=True)
 
+        #cv2.imshow('Received', frame)
+
         result = analyze_deepface(frame)
         return result
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0")
