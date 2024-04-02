@@ -5,9 +5,11 @@ import numpy as np
 import tempfile
 import RPi.GPIO as GPIO
 import json
+import subprocess
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(2, GPIO.IN)
+GPIO.setup(3, GPIO.IN)
 
 video = cv2.VideoCapture(0)
 
@@ -45,6 +47,9 @@ recognition_iters = 0
 while True:
     _, frame = video.read()
 
+    if GPIO.input(3) == 0:  # pressed
+        subprocess.run(['shutdown', 'now'])
+
     if recognising and recognition_iters < 5:
         result = analyze_deepface(frame)
 
@@ -58,9 +63,9 @@ while True:
     elif recognising and recognition_iters == 5:
         if total_percentages:
             top_emotion = max(total_percentages, key=total_percentages.get)
-            playsound(f'audio/{top_emotion}.wav')
+            playsound(f'audio/{top_emotion}.mp3')
         else:
-            playsound('audio/noface.wav')
+            playsound('audio/noface.mp3')
         recognition_iters = 0
         recognising = False
         total_percentages = {}
@@ -70,6 +75,6 @@ while True:
 
     if not start:
         start = True
-        playsound('audio/start.wav')
+        playsound('audio/start.mp3')
 
 video.release()
