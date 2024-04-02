@@ -45,7 +45,7 @@ recognition_iters = 0
 while True:
     _, frame = video.read()
 
-    if recognising and recognition_iters < 10:
+    if recognising and recognition_iters < 5:
         result = analyze_deepface()
 
         if result:
@@ -65,7 +65,7 @@ while True:
         recognising = False
         total_percentages = {}
     elif GPIO.input(2) == 0:  # pressed
-        playsound('audio/start.ogg')
+        # playsound('audio/start.ogg')
         recognising = True
 
     if not start:
