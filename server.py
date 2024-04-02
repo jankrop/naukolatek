@@ -3,7 +3,6 @@ import flask
 import numpy as np
 import tempfile
 import json
-import cv2
 
 app = flask.Flask(__name__)
 
@@ -38,10 +37,6 @@ def index():
         frame = np.load(tmp_file.name, allow_pickle=True)
 
         result = analyze_deepface(frame)
-
-        cv2.imshow('Received', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            pass
 
         return json.dumps(result) if result != 'Error' else result
 
