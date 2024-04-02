@@ -20,11 +20,11 @@ TOLERANCE = 0.3
 
 start = False
 
-def analyze_deepface():
+def analyze_deepface(fr):
     result = None
 
     with tempfile.NamedTemporaryFile() as tmp_file:
-        np.save(tmp_file, frame)
+        np.save(tmp_file, fr)
         tmp_file.seek(0)
 
         try:
@@ -46,7 +46,7 @@ while True:
     _, frame = video.read()
 
     if recognising and recognition_iters < 5:
-        result = analyze_deepface()
+        result = analyze_deepface(frame)
 
         if result:
             total_percentages = {
