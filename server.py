@@ -1,3 +1,4 @@
+import cv2
 from deepface import DeepFace
 import flask
 import numpy as np
@@ -34,7 +35,7 @@ def index():
 
     with tempfile.NamedTemporaryFile() as tmp_file:
         file.save(tmp_file.name)
-        frame = np.load(tmp_file.name, allow_pickle=True)
+        frame = cv2.imdecode(np.frombuffer(tmp_file.read(), np.uint8), cv2.IMREAD_COLOR)
 
         result = analyze_deepface(frame)
 

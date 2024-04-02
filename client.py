@@ -24,7 +24,7 @@ def analyze_deepface(fr):
     result = None
 
     with tempfile.NamedTemporaryFile() as tmp_file:
-        np.save(tmp_file, fr)
+        tmp_file.write(cv2.imencode('.jpg', fr)[1].tobytes())
         tmp_file.seek(0)
 
         try:
