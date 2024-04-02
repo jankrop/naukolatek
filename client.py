@@ -48,6 +48,7 @@ while True:
     _, frame = video.read()
 
     if GPIO.input(3) == 0:  # pressed
+        playsound('audio/off.mp3')
         subprocess.run(['shutdown', 'now'])
 
     if recognising and recognition_iters < 5:
